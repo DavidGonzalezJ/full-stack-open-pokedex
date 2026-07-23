@@ -1,9 +1,11 @@
 name: Deployment pipeline
-
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
 
 jobs:
     simple_deployment_pipeline:
@@ -25,3 +27,27 @@ jobs:
             run: npx playwright install --with-deps chromium
           - name: E2E tests
             run: npm run test:e2e
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout code
+            uses: actions/checkout@v4
+
+          - name: Setup Node.js
+            uses: actions/setup-node@v4
+            with:
+              node-version: '20'
+
+          - name: Install dependencies
+            run: npm ci
+
+          - name: Build frontend
+            run: npm run build
+
+          - name: Setup flyctl
+            uses: superfly/flyctl-actions/setup-flyctl@master
+
+          - name: Deploy to Fly.io
+            run: flyctl deploy --remote-only
+            env:
+              FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
