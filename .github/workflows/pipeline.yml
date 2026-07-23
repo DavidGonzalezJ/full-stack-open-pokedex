@@ -15,21 +15,25 @@ jobs:
           - uses: actions/setup-node@v4
             with:
                 node-version: '20'
+
           - name: Install dependencies
             run: npm install
+
           - name: Check style
             run: npm run eslint
+
           - name: Build
             run: npm run build
+
           - name: Test
             run: npm run test
+
           - name: Install Playwright browsers
             run: npx playwright install --with-deps chromium
+
           - name: E2E tests
             run: npm run test:e2e
-    deploy:
-        runs-on: ubuntu-latest
-        steps:
+
           - name: Checkout code
             uses: actions/checkout@v4
 
@@ -52,3 +56,17 @@ jobs:
             run: flyctl deploy --remote-only
             env:
               FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    tag_release:
+        needs: [simple_deployment_pipeline]
+        runs-on: ubuntu-latest
+        if: ${{ github.event_name == 'push' }}
+        steps:
+          - uses: actions/checkout@v4
+            with:
+              fetch-depth: 0  # necesario para obtener todos los tags
+          - name: Bump version and push tag
+            uses: anothrNick/github-tag-action@1.64.0
+            env:
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              DEFAULT_BUMP: patch  # para que por defecto sea patch
+              DRY_RUN: false
